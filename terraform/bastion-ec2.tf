@@ -30,8 +30,9 @@ resource "aws_security_group" "bastion_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["YOUR_PUBLIC_IP/32"] # replace
+    cidr_blocks = ["${chomp(data.http.my_ip.response_body)}/32"]
   }
+
 
   egress {
     from_port   = 0
@@ -52,7 +53,7 @@ module "bastion_host" {
   source  = "terraform-aws-modules/ec2-instance/aws"
 
   name = "bastion-host"
-
+  ami = data.aws_ami.ubuntu.id
   instance_type = "t3.micro"
   key_name      = aws_key_pair.bastion_keypair.key_name
   monitoring    = true
