@@ -1,0 +1,28 @@
+# my-alb-gateway.yaml
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: app-alb-gateway
+  namespace: default
+spec:
+  gatewayClassName: aws-alb-gateway-class
+  infrastructure:
+    parametersRef:
+      kind: LoadBalancerConfiguration
+      name: app-gw-lbconfig
+      group: gateway.k8s.aws
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+    hostname: "*.dsvault.in"
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: https
+    protocol: HTTPS
+    hostname: "*.dsvault.in"
+    port: 443
+    allowedRoutes:
+      namespaces:
+        from: All

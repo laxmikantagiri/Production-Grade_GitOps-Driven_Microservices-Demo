@@ -1,0 +1,11 @@
+# lbconfig.yaml
+apiVersion: gateway.k8s.aws/v1beta1
+kind: LoadBalancerConfiguration
+metadata:
+  name: app-gw-lbconfig
+  namespace: default
+spec:
+  scheme: internet-facing
+  listenerConfigurations:
+    - protocolPort: HTTPS:443
+      defaultCertificate: arn:aws:acm:us-east-1:585593375370:certificate/393f5337-b111-474d-b41d-99827011bcb4

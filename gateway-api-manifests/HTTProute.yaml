@@ -1,0 +1,21 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: http-app-route
+  namespace: default
+spec:
+  hostnames:
+    - "app.dsvault.in"
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: app-alb-gateway
+    sectionName: http
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: app-alb-gateway
+    sectionName: https
+  rules:
+  - backendRefs:
+    - name: frontend
+      port: 80
