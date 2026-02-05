@@ -5,6 +5,10 @@ on:
     branches: [ main ]
     paths:
       - "src/**"
+permissions:
+  contents: read
+  packages: write
+  security-events: write
 
 jobs:
   detect-changes:
