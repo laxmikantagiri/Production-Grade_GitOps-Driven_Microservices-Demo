@@ -58,9 +58,11 @@ jobs:
       - name: Run Trivy Scan
         uses: aquasecurity/trivy-action@0.20.0
         with:
-          image-ref: $IMAGE_NAME
+          scan-type: image
+          image-ref: ${{ env.IMAGE_NAME }}
           severity: HIGH,CRITICAL
           exit-code: 1
+          vuln-type: os,library
 
       # -------------------
       # Push image (only if scan passes)
