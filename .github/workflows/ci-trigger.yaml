@@ -56,6 +56,7 @@ jobs:
 
     with:
       service: ${{ matrix.service }}
+    secrets: inherit
 
     permissions:
       contents: read
