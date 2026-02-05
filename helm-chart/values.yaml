@@ -17,9 +17,40 @@
 # Declare variables to be passed into your templates.
 
 images:
-  repository: us-central1-docker.pkg.dev/google-samples/microservices-demo
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  adservice:
+    repository: ghcr.io/laxmikantagiri/microservices-demo/adservice
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: v0.10.4
+  cartservice:
+    repository: ghcr.io/laxmikantagiri/microservices-demo/cartservice
+    tag: v0.10.4
+  checkoutservice:
+    repository: ghcr.io/laxmikantagiri/microservices-demo/checkoutservice
+    tag: v0.10.4
+  currencyservice:
+    repository: ghcr.io/laxmikantagiri/microservices-demo/currencyservice
+    tag: v0.10.4
+  emailservice:
+    repository: ghcr.io/laxmikantagiri/microservices-demo/emailservice
+    tag: v0.10.4
+  frontend:
+    repository: ghcr.io/laxmikantagiri/microservices-demo/frontend
+    tag: v0.10.4
+  loadgenerator:
+    repository: ghcr.io/laxmikantagiri/microservices-demo/loadgenerator
+    tag: v0.10.4
+  paymentservice:
+    repository: ghcr.io/laxmikantagiri/microservices-demo/paymentservice
+    tag: v0.10.4
+  productcatalogservice:
+    repository: ghcr.io/laxmikantagiri/microservices-demo/productcatalogservice
+    tag: v0.10.4
+  recommendationservice:
+    repository: ghcr.io/laxmikantagiri/microservices-demo/recommendationservice
+    tag: v0.10.4
+  shippingservice:
+    repository: ghcr.io/laxmikantagiri/microservices-demo/shippingservice
+    tag: v0.10.4
 
 serviceAccounts:
   # Specifies whether service accounts should be created.
