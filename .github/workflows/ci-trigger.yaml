@@ -8,29 +8,39 @@ on:
 
 permissions:
   contents: read
-  packages: write  # this is now used for pushing
-  security-events: none
+  packages: write
 
 jobs:
+  # -------------------------------
+  # Job 1: Detect changed services
+  # -------------------------------
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
       services: ${{ steps.changed.outputs.services }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - id: changed
+      - name: Detect changed services
+        id: changed
         run: |
           SERVICES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
             | grep '^src/' \
             | cut -d'/' -f2 \
             | sort -u \
             | jq -R -s -c 'split("\n")[:-1]')
+
+          echo "Detected services: $SERVICES"
           echo "services=$SERVICES" >> $GITHUB_OUTPUT
 
+
+  # --------------------------------------------------
+  # Job 2: Call reusable workflow (matrix per service)
+  # --------------------------------------------------
   build-and-push:
     needs: detect-changes
     if: needs.detect-changes.outputs.services != '[]'
@@ -40,26 +50,13 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.detect-changes.outputs.services) }}
 
-    runs-on: ubuntu-latest
+    # 🚨 IMPORTANT:
+    # Reusable workflows are called at JOB level
+    uses: ./.github/workflows/microservice-ci.yaml
 
-    steps:
-      # Step 1: Call the reusable workflow for build + scan
-      - name: Build and Scan
-        uses: ./.github/workflows/microservice-ci.yaml
-        with:
-          service: ${{ matrix.service }}
+    with:
+      service: ${{ matrix.service }}
 
-      # Step 2: Login to GHCR with GITHUB_TOKEN (caller workflow)
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Step 3: Push the image
-      - name: Push Image
-        run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/microservices-demo/${{ matrix.service }}:sha-${{ github.sha }}
-          docker push $IMAGE_NAME
-
+    permissions:
+      contents: read
+      packages: write
