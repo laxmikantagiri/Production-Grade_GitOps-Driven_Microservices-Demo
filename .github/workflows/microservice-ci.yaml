@@ -14,7 +14,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-      security-events: write
+      security-events: none
 
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/microservices-demo/${{ inputs.service }}:sha-${{ github.sha }}
