@@ -1,0 +1,43 @@
+name: Microservices Trigger CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "src/**"
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.changed.outputs.services }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: changed
+        run: |
+          SERVICES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
+            | grep '^src/' \
+            | cut -d'/' -f2 \
+            | sort -u \
+            | jq -R -s -c 'split("\n")[:-1]')
+
+          echo "services=$SERVICES" >> $GITHUB_OUTPUT
+
+
+  build:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.services != '[]'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+
+    uses: ./.github/workflows/microservice-ci.yaml
+    with:
+      service: ${{ matrix.service }}
+
