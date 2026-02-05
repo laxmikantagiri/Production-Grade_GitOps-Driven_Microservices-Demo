@@ -5,10 +5,11 @@ on:
     branches: [ main ]
     paths:
       - "src/**"
+
 permissions:
   contents: read
-  packages: write
-  security-events: write
+  packages: write  # this is now used for pushing
+  security-events: none
 
 jobs:
   detect-changes:
@@ -28,11 +29,9 @@ jobs:
             | cut -d'/' -f2 \
             | sort -u \
             | jq -R -s -c 'split("\n")[:-1]')
-
           echo "services=$SERVICES" >> $GITHUB_OUTPUT
 
-
-  build:
+  build-and-push:
     needs: detect-changes
     if: needs.detect-changes.outputs.services != '[]'
 
@@ -41,7 +40,26 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.detect-changes.outputs.services) }}
 
-    uses: ./.github/workflows/microservice-ci.yaml
-    with:
-      service: ${{ matrix.service }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Call the reusable workflow for build + scan
+      - name: Build and Scan
+        uses: ./.github/workflows/microservice-ci.yaml
+        with:
+          service: ${{ matrix.service }}
+
+      # Step 2: Login to GHCR with GITHUB_TOKEN (caller workflow)
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 3: Push the image
+      - name: Push Image
+        run: |
+          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/microservices-demo/${{ matrix.service }}:sha-${{ github.sha }}
+          docker push $IMAGE_NAME
 
