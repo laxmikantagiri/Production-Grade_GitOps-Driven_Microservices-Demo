@@ -2,7 +2,7 @@ apiVersion: gateway.k8s.aws/v1beta1
 kind: TargetGroupConfiguration
 metadata:
   name: app-tg-config
-  namespace: default
+  namespace: boutique-app
 spec:
   targetReference:
     name: frontend
