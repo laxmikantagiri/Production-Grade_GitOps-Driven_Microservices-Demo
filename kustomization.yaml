@@ -7,7 +7,7 @@ resources:
 
 helmCharts:
   - name: onlineboutique
-    repo: oci://ghcr.io/laxmikantagiri/onlineboutique
+    repo: oci://ghcr.io/laxmikantagiri
     version: 0.10.4
     releaseName: boutique-app
     namespace: boutique-app
