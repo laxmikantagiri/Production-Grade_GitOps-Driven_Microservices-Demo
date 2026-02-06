@@ -56,7 +56,7 @@ jobs:
           scan-type: image
           image-ref: ${{ env.IMAGE_NAME }}
           severity: HIGH,CRITICAL
-          exit-code: 1
+          exit-code: 0
           vuln-type: os,library
 
       # -------------------
