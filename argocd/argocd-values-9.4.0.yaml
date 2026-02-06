@@ -189,7 +189,7 @@ configs:
   cm:
     # -- Create the argocd-cm configmap for [declarative setup]
     create: true
-
+    kustomize.buildOptions: "--enable-helm"
     # -- Annotations to be added to argocd-cm configmap
     annotations: {}
 
