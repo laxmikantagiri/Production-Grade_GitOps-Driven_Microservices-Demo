@@ -3,6 +3,27 @@ kind: Application
 metadata:
   name: boutique-app
   namespace: argocd
+  labels:
+    argocd-image-updater.argoproj.io/watch: "true"
+  annotations:
+    argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/write-back-target: helmvalues
+
+    argocd-image-updater.argoproj.io/image-list: |
+      frontend=ghcr.io/laxmikantagiri/microservices-demo/frontend
+      loadgenerator=ghcr.io/laxmikantagiri/microservices-demo/loadgenerator
+    # FRONTEND
+    argocd-image-updater.argoproj.io/frontend.update-strategy: name
+    argocd-image-updater.argoproj.io/frontend.allow-tags: regexp:^sha-[a-f0-9]{7,40}$
+    argocd-image-updater.argoproj.io/frontend.helm.image-name: images.frontend.repository
+    argocd-image-updater.argoproj.io/frontend.helm.image-tag: images.frontend.tag
+
+    # LOADGENERATOR
+    argocd-image-updater.argoproj.io/loadgenerator.update-strategy: name
+    argocd-image-updater.argoproj.io/loadgenerator.allow-tags: regexp:^sha-[a-f0-9]{7,40}$
+    argocd-image-updater.argoproj.io/loadgenerator.helm.image-name: images.loadgenerator.repository
+    argocd-image-updater.argoproj.io/loadgenerator.helm.image-tag: images.loadgenerator.tag
+
 spec:
   project: default
 
