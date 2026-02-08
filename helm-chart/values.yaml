@@ -35,7 +35,7 @@ images:
     tag: v0.10.4
   frontend:
     repository: ghcr.io/laxmikantagiri/microservices-demo/frontend
-    tag: v0.10.4
+    tag: sha-fdfd7c76346591630fd687db4fc2324e71795f66
   loadgenerator:
     repository: ghcr.io/laxmikantagiri/microservices-demo/loadgenerator
     tag: v0.10.4
