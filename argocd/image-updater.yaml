@@ -9,7 +9,7 @@ spec:
     - namePattern: "boutique-*"
 
       commonUpdateSettings:
-        updateStrategy: digest
+        updateStrategy: "newest-build"
         allowTags: "regexp:^sha-[a-f0-9]{7,40}$"
 
       images:
