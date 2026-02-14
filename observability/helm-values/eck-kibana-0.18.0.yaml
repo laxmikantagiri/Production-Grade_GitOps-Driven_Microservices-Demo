@@ -1,0 +1,195 @@
+---
+# Default values for eck-kibana.
+# This is a YAML-formatted file.
+
+# Overridable names of the Kibana resource.
+# By default, this is the Release name set for the chart,
+# followed by 'eck-kibana'.
+#
+# nameOverride will override the name of the Chart with the name set here,
+# so nameOverride: quickstart, would convert to '{{ Release.name }}-quickstart'
+#
+# nameOverride: "quickstart"
+#
+# fullnameOverride will override both the release name, and the chart name,
+# and will name the Kibana resource exactly as specified.
+#
+# fullnameOverride: "quickstart"
+
+# Version of Kibana.
+#
+version: 9.3.0
+
+# Kibana Docker image to deploy
+#
+# image: docker.elastic.co/kibana/kibana:9.3.0
+
+# Labels that will be applied to Kibana.
+#
+labels: {}
+
+# Annotations that will be applied to Kibana.
+#
+annotations: {}
+
+# ** Deprecation Notice **
+# The previous versions of this Helm Chart simply used the `spec` field here
+# and allowed the user to specify any fields below spec that were templated directly
+# into the final Kibana manifest. This is no long the preferred way to specify these
+# fields and each field that is supported underneath `spec` is now directly specified
+# in this values file. Currently both patterns are supported for backwards compatibility
+# but we plan to remove the `spec` field in the future.
+# spec: {}
+
+# Count of Kibana replicas to create.
+#
+count: 1
+
+# Reference to ECK-managed Elasticsearch resource.
+#
+elasticsearchRef:
+  name: eck-elasticsearch
+  # Optional namespace reference to Elasticsearch resource.
+  # If not specified, then the namespace of the Kibana resource
+  # will be assumed.
+  #
+  namespace: logging
+  #
+  # Optional secretName referencing an existing Kubernetes secret that contains connection information
+  # for associating a Kibana instance to a remote Elasticsearch instance not managed by ECK.
+  # The referenced secret must contain the following:
+  # - `url`: the URL to reach the Elastic resource
+  # - `username`: the username of the user to be authenticated to the Elastic resource
+  # - `password`: the password of the user to be authenticated to the Elastic resource
+  # - `ca.crt`: the CA certificate in PEM format (optional)
+  # This field cannot be used in combination with the other fields name, namespace or serviceName.
+  #
+  # secretName: my-remote-es-credentials
+
+# Reference to an EnterpriseSearch running in the same Kubernetes cluster
+#
+# enterpriseSearchRef:
+
+# Reference to an PackageRegistry running in the same Kubernetes cluster
+#
+# packageRegistryRef:
+
+# The Kibana configuration (kibana.yml)
+# ref: https://www.elastic.co/guide/en/kibana/current/settings.html
+#
+config: null
+
+# The HTTP layer configuration for Kibana.
+#
+# http:
+
+# PodTemplate provides customisation options (labels, annotations, affinity rules,
+# resource requests, and so on) for the Kibana pods
+#
+# podTemplate:
+
+# Number of revisions to retain to allow rollback in the underlying deployment.
+# By default, if not set, Kubernetes sets 10.
+#
+# revisionHistoryLimit: 2
+
+# Control Kibana Secure Settings.
+# ref: https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-kibana-secure-settings.html
+#
+secureSettings: []
+
+# Used to check access from the current resource to a resource (for ex. Elasticsearch) in a different namespace.
+# Can only be used if ECK is enforcing RBAC on references.
+#
+# serviceAccountName: ""
+
+# Settings for configuring stack monitoring.
+# ref: https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-stack-monitoring.html
+#
+monitoring: {}
+  # metrics:
+  #   elasticsearchRefs:
+  #   - name: monitoring
+  #     namespace: observability
+  # logs:
+  #   elasticsearchRefs:
+  #   - name: monitoring
+  #     namespace: observability
+
+# Settings for controlling Kibana ingress. Enabling ingress will expose your Kibana instance
+# to the public internet, and as such is disabled by default.
+#
+# *NOTE* when configuring Kibana Ingress, ensure that `config.server.publicBaseUrl` setting for
+# Kibana is also set, as it is required when exposing Kibana behind a load balancer/ingress.
+# Also of note are `server.basePath`, and `server.rewriteBasePath` settings in the Kibana configuration.
+#
+# ref: https://www.elastic.co/guide/en/kibana/current/settings.html
+#
+# Each Cloud Service Provider has different requirements for setting up Ingress. Some links to common documentation are:
+# - AWS: https://docs.aws.amazon.com/eks/latest/userguide/alb-ingress.html
+# - GCP: https://cloud.google.com/kubernetes-engine/docs/concepts/ingress
+# - Azure: https://learn.microsoft.com/en-us/azure/aks/app-routing
+# - Nginx: https://kubernetes.github.io/ingress-nginx/
+#
+ingress:
+  enabled: false
+
+  # Annotations that will be applied to the Ingress resource. Note that some ingress controllers are controlled via annotations.
+  #
+  # Nginx Annotations: https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/
+  #
+  # Common annotations:
+  #   kubernetes.io/ingress.class: gce          # Configures the Ingress resource to use the GCE ingress controller and create an external Application Load Balancer.
+  #   kubernetes.io/ingress.class: gce-internal # Configures the Ingress resource to use the GCE ingress controller and create an internal Application Load Balancer.
+  #   kubernetes.io/ingress.class: nginx        # Configures the Ingress resource to use the NGINX ingress controller.
+  #
+  annotations: {}
+
+  # Labels that will be applied to the Ingress resource.
+  #
+  labels: {}
+
+  # Some ingress controllers require the use of a specific class name to route traffic to the correct controller, notably AKS and EKS, which
+  # replaces the use of the 'kubernetes.io/ingress.class' annotation.
+  #
+  # className: webapprouting.kubernetes.azure.com | alb
+
+  # Ingress paths are required to have a corresponding path type. Defaults to 'Prefix'.
+  #
+  # There are 3 supported path types:
+  # - ImplementationSpecific
+  # - Prefix
+  # - Exact
+  #
+  # ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+  #
+  pathType: Prefix
+
+  # Hosts are a list of hosts included in the Ingress definition, with a corresponding path at which the Kibana service
+  # will be exposed. Each host in the list should be a fully qualified DNS name that will resolve to the exposed Ingress object.
+  #
+  # ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#name-based-virtual-hosting
+  #
+  hosts:
+    - host: chart-example.local
+      path: /
+
+  # TLS defines whether TLS will be enabled on the Ingress resource.
+  #
+  # *NOTE* Many Cloud Service Providers handle TLS in a custom manner, and as such, it is recommended to consult their documentation.
+  # Notably GKE and Nginx Ingress Controllers seems to respect the Ingress TLS settings, AKS and EKS ignore it.
+  #
+  # - AKS:   https://learn.microsoft.com/en-us/azure/aks/app-routing-dns-ssl
+  # - GKE:   https://cloud.google.com/kubernetes-engine/docs/concepts/ingress#options_for_providing_ssl_certificates
+  # - EKS:   https://aws.amazon.com/blogs/containers/serve-distinct-domains-with-tls-powered-by-acm-on-amazon-eks/
+  # - Nginx: https://kubernetes.github.io/ingress-nginx/user-guide/tls/
+  #
+  # Kubernetes ingress TLS documentation:
+  # ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+  #
+  tls:
+    enabled: false
+    # Optional Kubernetes secret name that contains a base64 encoded PEM certificate and private key that corresponds to the above 'hosts' definitions.
+    # If tls is enabled, but this field is not set, the self-signed certificate and key created by the ECK operator will be used.
+    # secretName: chart-example-tls
+

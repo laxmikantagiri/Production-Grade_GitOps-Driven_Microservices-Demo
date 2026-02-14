@@ -1,0 +1,14 @@
+apiVersion: gateway.k8s.aws/v1beta1
+kind: TargetGroupConfiguration
+metadata:
+  name: kibana-tg-config
+  namespace: logging
+spec:
+  targetReference:
+    name: eck-kibana-kb-http 
+  defaultConfiguration:
+    targetType: ip
+    protocol: HTTPS
+    healthCheckConfig:
+      healthCheckProtocol: HTTPS
+      healthCheckPath: /api/status

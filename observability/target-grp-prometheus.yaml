@@ -1,0 +1,10 @@
+apiVersion: gateway.k8s.aws/v1beta1
+kind: TargetGroupConfiguration
+metadata:
+  name: prometheus-tg-config
+  namespace: monitoring
+spec:
+  targetReference:
+    name: kube-prometheus-stack-prometheus 
+  defaultConfiguration:
+    targetType: ip
