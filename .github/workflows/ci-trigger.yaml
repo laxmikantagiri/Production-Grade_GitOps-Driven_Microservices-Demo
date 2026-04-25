@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   # -------------------------------
-  # Job 1: Detect changed services
+  # Job 1: Detect changed service
   # -------------------------------
   detect-changes:
     runs-on: ubuntu-latest
