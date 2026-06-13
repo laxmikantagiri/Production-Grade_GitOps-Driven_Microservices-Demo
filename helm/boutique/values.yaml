@@ -1,0 +1,57 @@
+namespace: boutique-app
+
+global:
+  accountId: "803146828684"
+  region: "ap-south-1"
+
+services:
+
+  frontend:
+    port: 8080
+    servicePort: 80
+    replicas: 2
+
+  adservice:
+    port: 9555
+    replicas: 1
+
+  cartservice:
+    port: 7070
+    replicas: 1
+
+  checkoutservice:
+    port: 5050
+    replicas: 1
+
+  currencyservice:
+    port: 7000
+    replicas: 1
+
+  emailservice:
+    port: 8080
+    replicas: 1
+
+  paymentservice:
+    port: 50051
+    replicas: 1
+
+  productcatalogservice:
+    port: 3550
+    replicas: 1
+
+  recommendationservice:
+    port: 8080
+    replicas: 1
+
+  shippingservice:
+    port: 50051
+    replicas: 1
+
+  shoppingassistantservice:
+    port: 8080
+    replicas: 1
+
+ingress:
+  enabled: true
+  className: nginx
+  host: ""

@@ -1,0 +1,89 @@
+{{- $account := .Values.global.accountId -}}
+{{- $region := .Values.global.region -}}
+
+{{- range $name, $svc := .Values.services }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+spec:
+  replicas: {{ $svc.replicas }}
+
+  selector:
+    matchLabels:
+      app: {{ $name }}
+
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+
+    spec:
+      containers:
+      - name: {{ $name }}
+
+        image: {{ $account }}.dkr.ecr.{{ $region }}.amazonaws.com/microservices-demo/{{ $name }}:latest
+
+        imagePullPolicy: Always
+
+        ports:
+        - containerPort: {{ $svc.port }}
+
+{{- if eq $name "frontend" }}
+        env:
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          value: "productcatalogservice:3550"
+
+        - name: CURRENCY_SERVICE_ADDR
+          value: "currencyservice:7000"
+
+        - name: CART_SERVICE_ADDR
+          value: "cartservice:7070"
+
+        - name: RECOMMENDATION_SERVICE_ADDR
+          value: "recommendationservice:8080"
+
+        - name: CHECKOUT_SERVICE_ADDR
+          value: "checkoutservice:5050"
+
+        - name: SHIPPING_SERVICE_ADDR
+          value: "shippingservice:50051"
+
+        - name: AD_SERVICE_ADDR
+          value: "adservice:9555"
+
+{{- end }}
+
+{{- if eq $name "checkoutservice" }}
+        env:
+        - name: SHIPPING_SERVICE_ADDR
+          value: "shippingservice:50051"
+
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          value: "productcatalogservice:3550"
+
+        - name: CART_SERVICE_ADDR
+          value: "cartservice:7070"
+
+        - name: CURRENCY_SERVICE_ADDR
+          value: "currencyservice:7000"
+
+        - name: EMAIL_SERVICE_ADDR
+          value: "emailservice:8080"
+
+        - name: PAYMENT_SERVICE_ADDR
+          value: "paymentservice:50051"
+
+{{- end }}
+
+{{- if eq $name "recommendationservice" }}
+        env:
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          value: "productcatalogservice:3550"
+
+{{- end }}
+
+{{- end }}

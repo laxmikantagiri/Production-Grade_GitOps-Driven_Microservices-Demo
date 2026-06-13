@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: boutique-app
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/meAnshu/Production-Grade_GitOps-Driven_Microservices-Demo.git
+    targetRevision: main
+    path: helm/boutique
+
+    helm:
+      releaseName: boutique
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: boutique-app
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true
