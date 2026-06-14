@@ -1,2 +1,2 @@
-variable "services"    { type = list(string) }
+variable "services" { type = list(string) }
 variable "environment" { type = string }

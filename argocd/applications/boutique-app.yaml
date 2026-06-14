@@ -1,8 +1,28 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
+
 metadata:
   name: boutique-app
   namespace: argocd
+
+  annotations:
+
+    argocd-image-updater.argoproj.io/image-list: |
+      frontend=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/frontend,
+      cartservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/cartservice,
+      productcatalogservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/productcatalogservice,
+      currencyservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/currencyservice,
+      paymentservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/paymentservice,
+      shippingservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/shippingservice,
+      checkoutservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/checkoutservice,
+      recommendationservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/recommendationservice,
+      emailservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/emailservice,
+      adservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/adservice
+
+    argocd-image-updater.argoproj.io/write-back-method: git
+
+    argocd-image-updater.argoproj.io/update-strategy: newest-build
+
 spec:
   project: default
 

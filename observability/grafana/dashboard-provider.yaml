@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provider
+  namespace: monitoring
+data:
+  provider.yaml: |
+    apiVersion: 1
+    providers:
+    - name: default
+      folder: Kubernetes
+      type: file
+      disableDeletion: false
+      options:
+        path: /var/lib/grafana/dashboards

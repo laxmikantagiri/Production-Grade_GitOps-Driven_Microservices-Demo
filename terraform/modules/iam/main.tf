@@ -43,9 +43,9 @@ resource "aws_iam_policy" "github_actions" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "ECRAuthToken"
-        Effect = "Allow"
-        Action = ["ecr:GetAuthorizationToken"]
+        Sid      = "ECRAuthToken"
+        Effect   = "Allow"
+        Action   = ["ecr:GetAuthorizationToken"]
         Resource = "*"
       },
       {
@@ -68,9 +68,9 @@ resource "aws_iam_policy" "github_actions" {
         ]
       },
       {
-        Sid    = "EKSDescribe"
-        Effect = "Allow"
-        Action = ["eks:DescribeCluster"]
+        Sid      = "EKSDescribe"
+        Effect   = "Allow"
+        Action   = ["eks:DescribeCluster"]
         Resource = "arn:aws:eks:${var.aws_region}:${var.account_id}:cluster/${var.cluster_name}"
       }
     ]

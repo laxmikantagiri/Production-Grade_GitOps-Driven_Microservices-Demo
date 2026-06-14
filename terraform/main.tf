@@ -92,7 +92,7 @@ module "helm" {
   vpc_id       = module.vpc.vpc_id
 
   # IAM role ARNs for controllers (Pod Identity)
-  lbc_role_arn              = module.iam.lbc_role_arn
+  lbc_role_arn                = module.iam.lbc_role_arn
   cluster_autoscaler_role_arn = module.iam.cluster_autoscaler_role_arn
 
   argocd_notification_email = var.argocd_notification_email

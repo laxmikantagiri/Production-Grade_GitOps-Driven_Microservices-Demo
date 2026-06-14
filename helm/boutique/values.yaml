@@ -10,48 +10,62 @@ services:
     port: 8080
     servicePort: 80
     replicas: 2
+    imageTag: "v1"
 
   adservice:
     port: 9555
     replicas: 1
+    imageTag: "v1"
 
   cartservice:
     port: 7070
     replicas: 1
+    imageTag: "v1"
 
   checkoutservice:
     port: 5050
     replicas: 1
+    imageTag: "v1"
 
   currencyservice:
     port: 7000
     replicas: 1
+    imageTag: "v1"
 
   emailservice:
     port: 8080
     replicas: 1
+    imageTag: "v1"
 
   paymentservice:
     port: 50051
     replicas: 1
+    imageTag: "v1"
 
   productcatalogservice:
     port: 3550
     replicas: 1
+    imageTag: "v1"
 
   recommendationservice:
     port: 8080
     replicas: 1
+    imageTag: "v1"
 
   shippingservice:
     port: 50051
     replicas: 1
+    imageTag: "v1"
 
   shoppingassistantservice:
     port: 8080
     replicas: 1
+    imageTag: "v1"
 
 ingress:
   enabled: true
   className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
   host: ""

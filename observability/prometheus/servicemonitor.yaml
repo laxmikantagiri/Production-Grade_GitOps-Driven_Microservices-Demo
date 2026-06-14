@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: observability-placeholder
+  namespace: monitoring
+data:
+  status: "enabled"

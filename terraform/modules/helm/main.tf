@@ -322,7 +322,7 @@ resource "helm_release" "argocd" {
         }
 
         cm = {
-          "kustomize.buildOptions" = "--enable-helm"
+          "kustomize.buildOptions"  = "--enable-helm"
           "resource.customizations" = ""
         }
 
@@ -392,6 +392,24 @@ resource "helm_release" "argocd" {
   depends_on = [helm_release.ingress_nginx]
 }
 
+resource "helm_release" "argocd_image_updater" {
+
+  name       = "argocd-image-updater"
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argocd-image-updater"
+  version    = "0.12.0"
+
+  namespace = kubernetes_namespace.argocd.metadata[0].name
+
+  wait    = true
+  timeout = 600
+
+  depends_on = [
+    helm_release.argocd
+  ]
+}
+
+
 resource "kubernetes_secret" "argocd_notifications" {
   metadata {
     name      = "argocd-notifications-secret"
@@ -400,7 +418,6 @@ resource "kubernetes_secret" "argocd_notifications" {
 
   data = {
     "email-username" = var.argocd_notification_email
-    "email-password" = "REPLACE_WITH_GMAIL_APP_PASSWORD"
   }
 
   depends_on = [helm_release.argocd]
@@ -418,7 +435,6 @@ resource "kubernetes_config_map" "argocd_notifications_cm" {
       port     = 587
       from     = var.argocd_notification_email
       username = "$email-username"
-      password = "$email-password"
     })
 
     "template.app-sync-failed" = yamlencode({
@@ -572,7 +588,6 @@ resource "helm_release" "kube_prometheus_stack" {
             smtp_smarthost     = "smtp.gmail.com:587"
             smtp_from          = var.argocd_notification_email
             smtp_auth_username = var.argocd_notification_email
-            smtp_auth_password = "REPLACE_WITH_GMAIL_APP_PASSWORD"
             smtp_require_tls   = true
           }
           route = {

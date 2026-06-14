@@ -27,3 +27,4 @@ variable "argocd_notification_email" {
   description = "Email address for ArgoCD sync/health notifications"
   type        = string
 }
+

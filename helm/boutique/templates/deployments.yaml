@@ -25,7 +25,7 @@ spec:
       containers:
       - name: {{ $name }}
 
-        image: {{ $account }}.dkr.ecr.{{ $region }}.amazonaws.com/microservices-demo/{{ $name }}:latest
+        image: {{ $account }}.dkr.ecr.{{ $region }}.amazonaws.com/microservices-demo/{{ $name }}:{{ $svc.imageTag }}
 
         imagePullPolicy: Always
 
