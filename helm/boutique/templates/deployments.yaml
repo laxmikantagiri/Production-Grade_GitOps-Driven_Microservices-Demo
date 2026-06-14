@@ -22,8 +22,31 @@ spec:
         app: {{ $name }}
 
     spec:
+      {{- $podSecurityContext := merge (default dict $.Values.defaults.podSecurityContext) (default dict $svc.podSecurityContext) }}
+      securityContext:
+        {{- toYaml $podSecurityContext | nindent 8 }}
       containers:
       - name: {{ $name }}
+        {{- $containerSecurityContext := merge (default dict $.Values.defaults.securityContext) (default dict $svc.securityContext) }}
+        {{- $containerResources := merge (default dict $.Values.defaults.resources) (default dict $svc.resources) }}
+        {{- $livenessProbe := merge (default dict $.Values.defaults.livenessProbe) (default dict $svc.livenessProbe) }}
+        {{- $readinessProbe := merge (default dict $.Values.defaults.readinessProbe) (default dict $svc.readinessProbe) }}
+        securityContext:
+          {{- toYaml $containerSecurityContext | nindent 10 }}
+        resources:
+          {{- toYaml $containerResources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: {{ $livenessProbe.httpGet.path }}
+            port: {{ $svc.port }}
+          initialDelaySeconds: {{ $livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ $livenessProbe.periodSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ $readinessProbe.httpGet.path }}
+            port: {{ $svc.port }}
+          initialDelaySeconds: {{ $readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ $readinessProbe.periodSeconds }}
 
         image: {{ $account }}.dkr.ecr.{{ $region }}.amazonaws.com/microservices-demo/{{ $name }}:{{ $svc.imageTag }}
 
