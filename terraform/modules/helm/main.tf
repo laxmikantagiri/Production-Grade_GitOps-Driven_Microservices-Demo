@@ -405,7 +405,7 @@ resource "helm_release" "argocd_image_updater" {
       }
     }
     resources = {
-      requests = { cpu = "50m",  memory = "64Mi"  }
+      requests = { cpu = "50m", memory = "64Mi" }
       limits   = { cpu = "200m", memory = "256Mi" }
     }
   })]
@@ -425,62 +425,13 @@ resource "kubernetes_secret" "git_credentials" {
 
   data = {
     username = "meAnshu"
-    password = var.git_token    # GitHub fine-grained PAT with Contents: Read+Write
+    password = var.git_token # GitHub fine-grained PAT with Contents: Read+Write
   }
 
   depends_on = [helm_release.argocd]
 }
 
 
-# ArgoCD Image Updater — Git write-back credentials
-# Image Updater commits updated imageTag values back to helm/boutique/values.yaml
-resource "kubernetes_secret" "git_credentials" {
-  metadata {
-    name      = "git-credentials"
-    namespace = kubernetes_namespace.argocd.metadata[0].name
-  }
-
-  data = {
-    username = "meAnshu"
-    password = var.git_token    # GitHub fine-grained PAT with Contents: Read+Write
-  }
-
-  depends_on = [helm_release.argocd]
-}
-
-
-# ArgoCD Image Updater — Git write-back credentials
-# Image Updater commits updated imageTag values back to helm/boutique/values.yaml
-resource "kubernetes_secret" "git_credentials" {
-  metadata {
-    name      = "git-credentials"
-    namespace = kubernetes_namespace.argocd.metadata[0].name
-  }
-
-  data = {
-    username = "meAnshu"
-    password = var.git_token    # GitHub fine-grained PAT with Contents: Read+Write
-  }
-
-  depends_on = [helm_release.argocd]
-}
-
-
-# ArgoCD Image Updater — Git write-back credentials
-# Image Updater commits updated imageTag values back to helm/boutique/values.yaml
-resource "kubernetes_secret" "git_credentials" {
-  metadata {
-    name      = "git-credentials"
-    namespace = kubernetes_namespace.argocd.metadata[0].name
-  }
-
-  data = {
-    username = "meAnshu"
-    password = var.git_token    # GitHub fine-grained PAT with Contents: Read+Write
-  }
-
-  depends_on = [helm_release.argocd]
-}
 
 resource "kubernetes_secret" "argocd_notifications" {
   metadata {
@@ -623,9 +574,9 @@ resource "helm_release" "kube_prometheus_stack" {
       }
 
       grafana = {
-        enabled       = true
+        enabled                 = true
         adminPasswordSecretName = "grafana-admin-secret"
-        adminPasswordSecretKey   = "admin-password"
+        adminPasswordSecretKey  = "admin-password"
         resources = {
           requests = { cpu = "100m", memory = "128Mi" }
           limits   = { cpu = "500m", memory = "512Mi" }

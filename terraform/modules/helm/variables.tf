@@ -40,23 +40,6 @@ variable "gmail_app_password" {
   sensitive   = true
 }
 
-variable "git_token" {
-  description = "GitHub PAT for ArgoCD Image Updater git write-back"
-  type        = string
-  sensitive   = true
-}
-
-variable "git_token" {
-  description = "GitHub PAT for ArgoCD Image Updater git write-back"
-  type        = string
-  sensitive   = true
-}
-
-variable "git_token" {
-  description = "GitHub PAT for ArgoCD Image Updater git write-back"
-  type        = string
-  sensitive   = true
-}
 
 variable "git_token" {
   description = "GitHub PAT for ArgoCD Image Updater git write-back"
