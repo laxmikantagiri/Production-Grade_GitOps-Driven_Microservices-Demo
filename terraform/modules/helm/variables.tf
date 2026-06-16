@@ -33,3 +33,33 @@ variable "account_id" {
   description = "AWS account ID — used for ECR registry URL in image updater"
   type        = string
 }
+
+variable "gmail_app_password" {
+  description = "Gmail App Password for SMTP notifications (ArgoCD + Alertmanager)"
+  type        = string
+  sensitive   = true
+}
+
+variable "git_token" {
+  description = "GitHub PAT for ArgoCD Image Updater git write-back"
+  type        = string
+  sensitive   = true
+}
+
+variable "git_token" {
+  description = "GitHub PAT for ArgoCD Image Updater git write-back"
+  type        = string
+  sensitive   = true
+}
+
+variable "git_token" {
+  description = "GitHub PAT for ArgoCD Image Updater git write-back"
+  type        = string
+  sensitive   = true
+}
+
+variable "git_token" {
+  description = "GitHub PAT for ArgoCD Image Updater git write-back"
+  type        = string
+  sensitive   = true
+}

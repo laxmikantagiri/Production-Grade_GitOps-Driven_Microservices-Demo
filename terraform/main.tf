@@ -97,6 +97,11 @@ module "helm" {
 
   argocd_notification_email = var.argocd_notification_email
   account_id                = data.aws_caller_identity.current.account_id
+  gmail_app_password        = var.gmail_app_password
+  git_token                 = var.git_token
+  git_token                 = var.git_token
+  git_token                 = var.git_token
+  git_token                 = var.git_token
 
   depends_on = [module.eks, module.iam]
 }

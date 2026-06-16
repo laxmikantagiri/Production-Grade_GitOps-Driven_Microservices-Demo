@@ -38,6 +38,9 @@ jobs:
 
       - name: Terraform Plan
         id: plan
+        env:
+          TF_VAR_gmail_app_password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TF_VAR_git_token: ${{ secrets.GIT_TOKEN }}
         run: |
           terraform plan -out=tfplan -detailed-exitcode
           echo "exitcode=$?" >> $GITHUB_OUTPUT
@@ -87,4 +90,7 @@ jobs:
           path: terraform/
 
       - name: Terraform Apply
+        env:
+          TF_VAR_gmail_app_password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TF_VAR_git_token: ${{ secrets.GIT_TOKEN }}
         run: terraform apply -auto-approve tfplan

@@ -13,6 +13,10 @@ spec:
     targetRevision: main
     path: observability
 
+    # Explicit directory mode — no Kustomize, no Helm, plain YAML apply
+    directory:
+      recurse: false
+
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -24,4 +28,3 @@ spec:
 
     syncOptions:
       - CreateNamespace=true
-

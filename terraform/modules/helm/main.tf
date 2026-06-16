@@ -414,6 +414,74 @@ resource "helm_release" "argocd_image_updater" {
 }
 
 
+
+# ArgoCD Image Updater — Git write-back credentials
+# Image Updater commits updated imageTag values back to helm/boutique/values.yaml
+resource "kubernetes_secret" "git_credentials" {
+  metadata {
+    name      = "git-credentials"
+    namespace = kubernetes_namespace.argocd.metadata[0].name
+  }
+
+  data = {
+    username = "meAnshu"
+    password = var.git_token    # GitHub fine-grained PAT with Contents: Read+Write
+  }
+
+  depends_on = [helm_release.argocd]
+}
+
+
+# ArgoCD Image Updater — Git write-back credentials
+# Image Updater commits updated imageTag values back to helm/boutique/values.yaml
+resource "kubernetes_secret" "git_credentials" {
+  metadata {
+    name      = "git-credentials"
+    namespace = kubernetes_namespace.argocd.metadata[0].name
+  }
+
+  data = {
+    username = "meAnshu"
+    password = var.git_token    # GitHub fine-grained PAT with Contents: Read+Write
+  }
+
+  depends_on = [helm_release.argocd]
+}
+
+
+# ArgoCD Image Updater — Git write-back credentials
+# Image Updater commits updated imageTag values back to helm/boutique/values.yaml
+resource "kubernetes_secret" "git_credentials" {
+  metadata {
+    name      = "git-credentials"
+    namespace = kubernetes_namespace.argocd.metadata[0].name
+  }
+
+  data = {
+    username = "meAnshu"
+    password = var.git_token    # GitHub fine-grained PAT with Contents: Read+Write
+  }
+
+  depends_on = [helm_release.argocd]
+}
+
+
+# ArgoCD Image Updater — Git write-back credentials
+# Image Updater commits updated imageTag values back to helm/boutique/values.yaml
+resource "kubernetes_secret" "git_credentials" {
+  metadata {
+    name      = "git-credentials"
+    namespace = kubernetes_namespace.argocd.metadata[0].name
+  }
+
+  data = {
+    username = "meAnshu"
+    password = var.git_token    # GitHub fine-grained PAT with Contents: Read+Write
+  }
+
+  depends_on = [helm_release.argocd]
+}
+
 resource "kubernetes_secret" "argocd_notifications" {
   metadata {
     name      = "argocd-notifications-secret"
@@ -422,6 +490,7 @@ resource "kubernetes_secret" "argocd_notifications" {
 
   data = {
     "email-username" = var.argocd_notification_email
+    "email-password" = var.gmail_app_password
   }
 
   depends_on = [helm_release.argocd]
@@ -439,6 +508,7 @@ resource "kubernetes_config_map" "argocd_notifications_cm" {
       port     = 587
       from     = var.argocd_notification_email
       username = "$email-username"
+      password = "$email-password"
     })
 
     "template.app-sync-failed" = yamlencode({
@@ -619,6 +689,7 @@ resource "helm_release" "kube_prometheus_stack" {
             smtp_smarthost     = "smtp.gmail.com:587"
             smtp_from          = var.argocd_notification_email
             smtp_auth_username = var.argocd_notification_email
+            smtp_auth_password = var.gmail_app_password
             smtp_require_tls   = true
           }
           route = {
