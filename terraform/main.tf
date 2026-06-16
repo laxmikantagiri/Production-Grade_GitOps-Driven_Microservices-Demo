@@ -96,6 +96,7 @@ module "helm" {
   cluster_autoscaler_role_arn = module.iam.cluster_autoscaler_role_arn
 
   argocd_notification_email = var.argocd_notification_email
+  account_id                = data.aws_caller_identity.current.account_id
 
   depends_on = [module.eks, module.iam]
 }

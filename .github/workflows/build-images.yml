@@ -30,6 +30,8 @@ jobs:
           - productcatalogservice
           - recommendationservice
           - shippingservice
+          - shoppingassistantservice
+          - loadgenerator
 
     steps:
       - uses: actions/checkout@v4

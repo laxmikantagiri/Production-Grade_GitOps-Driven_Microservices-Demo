@@ -6,7 +6,7 @@ metadata:
   namespace: argocd
 
   annotations:
-
+    # Image list: one entry per service — image updater watches ECR for new tags
     argocd-image-updater.argoproj.io/image-list: |
       frontend=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/frontend,
       cartservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/cartservice,
@@ -17,11 +17,17 @@ metadata:
       checkoutservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/checkoutservice,
       recommendationservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/recommendationservice,
       emailservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/emailservice,
-      adservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/adservice
+      adservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/adservice,
+      shoppingassistantservice=803146828684.dkr.ecr.ap-south-1.amazonaws.com/microservices-demo/shoppingassistantservice
 
-    argocd-image-updater.argoproj.io/write-back-method: git
+    # Write updated image tags back to Git (helm/boutique/values.yaml)
+    argocd-image-updater.argoproj.io/write-back-method: git:secret:argocd/git-credentials
 
+    # Update strategy: pick the image built most recently (matches github.run_number tag)
     argocd-image-updater.argoproj.io/update-strategy: newest-build
+
+    # Write-back target: update the imageTag key inside helm values
+    argocd-image-updater.argoproj.io/write-back-target: "helmvalues:helm/boutique/values.yaml"
 
 spec:
   project: default

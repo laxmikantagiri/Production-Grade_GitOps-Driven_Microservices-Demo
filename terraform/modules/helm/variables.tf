@@ -28,3 +28,8 @@ variable "argocd_notification_email" {
   type        = string
 }
 
+
+variable "account_id" {
+  description = "AWS account ID — used for ECR registry URL in image updater"
+  type        = string
+}

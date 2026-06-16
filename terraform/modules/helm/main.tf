@@ -26,14 +26,6 @@ resource "kubernetes_namespace" "argocd" {
   }
 }
 
-resource "kubernetes_namespace" "ingress_nginx" {
-  metadata {
-    name = "ingress-nginx"
-    labels = {
-      "app.kubernetes.io/managed-by" = "terraform"
-    }
-  }
-}
 
 resource "kubernetes_namespace" "monitoring" {
   metadata {
@@ -111,60 +103,51 @@ resource "helm_release" "ingress_nginx" {
   name       = "ingress-nginx"
   repository = "https://kubernetes.github.io/ingress-nginx"
   chart      = "ingress-nginx"
-  version    = "4.12.1"
-  namespace  = kubernetes_namespace.ingress_nginx.metadata[0].name
+  version    = "4.12.0"
+  namespace  = "kube-system"
 
   wait    = true
   timeout = 300
 
-  values = [
-    yamlencode({
-      controller = {
-        replicaCount = 2
+  set {
+    name  = "controller.replicaCount"
+    value = "2"
+  }
 
-        service = {
-          type = "LoadBalancer"
-          annotations = {
-            "service.beta.kubernetes.io/aws-load-balancer-type"            = "external"
-            "service.beta.kubernetes.io/aws-load-balancer-nlb-target-type" = "ip"
-            "service.beta.kubernetes.io/aws-load-balancer-scheme"          = "internet-facing"
-          }
-        }
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-type"
+    value = "external"
+  }
 
-        resources = {
-          requests = {
-            cpu    = "100m"
-            memory = "128Mi"
-          }
-          limits = {
-            cpu    = "500m"
-            memory = "512Mi"
-          }
-        }
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-nlb-target-type"
+    value = "ip"
+  }
 
-        podDisruptionBudget = {
-          enabled      = true
-          minAvailable = 1
-        }
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-scheme"
+    value = "internet-facing"
+  }
 
-        metrics = {
-          enabled = true
-          serviceMonitor = {
-            enabled = true
-          }
-        }
+  set {
+    name  = "controller.resources.requests.cpu"
+    value = "100m"
+  }
 
-        config = {
-          "use-forwarded-headers"      = "true"
-          "compute-full-forwarded-for" = "true"
-          "proxy-buffer-size"          = "16k"
-          "use-gzip"                   = "true"
-          "keep-alive"                 = "75"
-          "keep-alive-requests"        = "1000"
-        }
-      }
-    })
-  ]
+  set {
+    name  = "controller.resources.requests.memory"
+    value = "256Mi"
+  }
+
+  set {
+    name  = "controller.resources.limits.cpu"
+    value = "500m"
+  }
+
+  set {
+    name  = "controller.resources.limits.memory"
+    value = "512Mi"
+  }
 
   depends_on = [helm_release.aws_load_balancer_controller]
 }
@@ -341,9 +324,12 @@ resource "helm_release" "argocd" {
         ingress = {
           enabled          = true
           ingressClassName = "nginx"
-          annotations      = { "nginx.ingress.kubernetes.io/backend-protocol" = "HTTP" }
-          hostname         = ""
-          tls              = false
+          annotations = {
+            "alb.ingress.kubernetes.io/scheme"      = "internet-facing"
+            "alb.ingress.kubernetes.io/target-type" = "ip"
+          }
+          hostname = ""
+          tls      = false
         }
       }
 
@@ -389,24 +375,42 @@ resource "helm_release" "argocd" {
     })
   ]
 
-  depends_on = [helm_release.ingress_nginx]
 }
 
 resource "helm_release" "argocd_image_updater" {
-
   name       = "argocd-image-updater"
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argocd-image-updater"
   version    = "0.12.0"
+  namespace  = kubernetes_namespace.argocd.metadata[0].name
+  wait       = true
+  timeout    = 600
 
-  namespace = kubernetes_namespace.argocd.metadata[0].name
+  values = [yamlencode({
+    config = {
+      registries = [{
+        name        = "ECR"
+        api_url     = "https://${var.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com"
+        prefix      = "${var.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com"
+        ping        = true
+        insecure    = false
+        credentials = "ext:/scripts/ecr-login.sh"
+        credsexpire = "10h"
+      }]
+    }
+    authScripts = {
+      enabled = true
+      scripts = {
+        "ecr-login.sh" = "#!/bin/sh\naws ecr get-login-password --region ${var.aws_region} | printf \"AWS:%s\" \"$(cat)\""
+      }
+    }
+    resources = {
+      requests = { cpu = "50m",  memory = "64Mi"  }
+      limits   = { cpu = "200m", memory = "256Mi" }
+    }
+  })]
 
-  wait    = true
-  timeout = 600
-
-  depends_on = [
-    helm_release.argocd
-  ]
+  depends_on = [helm_release.argocd]
 }
 
 
@@ -491,6 +495,29 @@ resource "kubernetes_config_map" "argocd_notifications_cm" {
 # 6. KUBE-PROMETHEUS-STACK
 # ============================================================
 
+
+resource "random_password" "grafana_admin" {
+  length           = 24
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}:?"
+}
+
+resource "kubernetes_secret" "grafana_admin" {
+  metadata {
+    name      = "grafana-admin-secret"
+    namespace = kubernetes_namespace.monitoring.metadata[0].name
+  }
+  data = {
+    "admin-password" = random_password.grafana_admin.result
+  }
+}
+
+output "grafana_admin_password" {
+  description = "Grafana admin password — store this securely"
+  value       = random_password.grafana_admin.result
+  sensitive   = true
+}
+
 resource "helm_release" "kube_prometheus_stack" {
   name       = "kube-prometheus-stack"
   repository = "https://prometheus-community.github.io/helm-charts"
@@ -527,7 +554,8 @@ resource "helm_release" "kube_prometheus_stack" {
 
       grafana = {
         enabled       = true
-        adminPassword = "admin"
+        adminPasswordSecretName = "grafana-admin-secret"
+        adminPasswordSecretKey   = "admin-password"
         resources = {
           requests = { cpu = "100m", memory = "128Mi" }
           limits   = { cpu = "500m", memory = "512Mi" }
@@ -535,9 +563,12 @@ resource "helm_release" "kube_prometheus_stack" {
         ingress = {
           enabled          = true
           ingressClassName = "nginx"
-          annotations      = { "nginx.ingress.kubernetes.io/backend-protocol" = "HTTP" }
-          hosts            = [""]
-          tls              = []
+          annotations = {
+            "alb.ingress.kubernetes.io/scheme"      = "internet-facing"
+            "alb.ingress.kubernetes.io/target-type" = "ip"
+          }
+          hosts = [""]
+          tls   = []
         }
         dashboardProviders = {
           "dashboardproviders.yaml" = {
@@ -638,5 +669,5 @@ resource "helm_release" "kube_prometheus_stack" {
     })
   ]
 
-  depends_on = [helm_release.ingress_nginx, helm_release.metrics_server]
+  depends_on = [helm_release.metrics_server]
 }

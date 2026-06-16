@@ -229,3 +229,68 @@ resource "aws_eks_pod_identity_association" "ebs_csi" {
   service_account = "ebs-csi-controller-sa"
   role_arn        = aws_iam_role.ebs_csi.arn
 }
+
+# ============================================================
+# ArgoCD Image Updater — Pod Identity Role (ECR read + token)
+# ============================================================
+resource "aws_iam_role" "argocd_image_updater" {
+  name = "${var.cluster_name}-argocd-image-updater"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "pods.eks.amazonaws.com"
+      }
+      Action = [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
+    }]
+  })
+}
+
+resource "aws_iam_policy" "argocd_image_updater" {
+  name        = "${var.cluster_name}-argocd-image-updater-policy"
+  description = "Allows ArgoCD Image Updater to pull ECR image metadata and refresh auth tokens"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "ECRAuthToken"
+        Effect   = "Allow"
+        Action   = ["ecr:GetAuthorizationToken"]
+        Resource = "*"
+      },
+      {
+        Sid    = "ECRReadMetadata"
+        Effect = "Allow"
+        Action = [
+          "ecr:DescribeRepositories",
+          "ecr:ListImages",
+          "ecr:DescribeImages",
+          "ecr:BatchGetImage",
+          "ecr:GetDownloadUrlForLayer"
+        ]
+        Resource = [
+          for svc in var.services :
+          "arn:aws:ecr:${var.aws_region}:${var.account_id}:repository/microservices-demo/${svc}"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "argocd_image_updater" {
+  role       = aws_iam_role.argocd_image_updater.name
+  policy_arn = aws_iam_policy.argocd_image_updater.arn
+}
+
+resource "aws_eks_pod_identity_association" "argocd_image_updater" {
+  cluster_name    = var.cluster_name
+  namespace       = "argocd"
+  service_account = "argocd-image-updater"
+  role_arn        = aws_iam_role.argocd_image_updater.arn
+}

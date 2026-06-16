@@ -85,6 +85,7 @@ variable "services" {
     "recommendationservice",
     "emailservice",
     "adservice",
+    "shoppingassistantservice",
     "loadgenerator"
   ]
 }

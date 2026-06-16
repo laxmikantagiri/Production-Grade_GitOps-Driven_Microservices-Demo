@@ -3,10 +3,6 @@ output "argocd_namespace" {
   value       = "argocd"
 }
 
-output "nginx_ingress_namespace" {
-  description = "Namespace where NGINX Ingress Controller is deployed"
-  value       = "ingress-nginx"
-}
 
 output "monitoring_namespace" {
   description = "Namespace where kube-prometheus-stack is deployed"

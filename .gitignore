@@ -30,3 +30,7 @@ vendor/
 .terraform
 .aider*
 backup/
+
+# Terraform plan binary (may contain sensitive data)
+tfplan
+*.tfplan
