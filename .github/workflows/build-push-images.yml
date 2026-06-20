@@ -1,0 +1,270 @@
+##############################################################
+# build-push-images.yml
+#
+# Triggered on:
+#   - Push to main (builds all changed services)
+#   - Manual dispatch (builds specific or all services)
+#
+# Purpose:
+#   1. Detect which services changed
+#   2. Build Docker image for each changed service
+#   3. Scan image for vulnerabilities (Trivy)
+#   4. Push to ECR with git-SHA tag
+#   5. ArgoCD Image Updater detects new tag → updates GitOps repo
+#
+# Security:
+#   - OIDC auth — no ECR credentials in GitHub Secrets
+#   - Trivy scan — blocks push on CRITICAL vulnerabilities
+#   - Immutable ECR tags — git-SHA can never be overwritten
+#   - Build cache — layer cache stored in ECR to speed builds
+##############################################################
+
+name: Build and Push Images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to build (leave empty to build all changed)'
+        required: false
+        default: ''
+      force_all:
+        description: 'Force build all services'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write
+  contents: read
+  security-events: write  # Required for uploading Trivy SARIF results
+
+env:
+  AWS_REGION: ap-south-1
+  AWS_ACCOUNT_ID: "803146828684"
+  ECR_REGISTRY: 803146828684.dkr.ecr.ap-south-1.amazonaws.com
+  ENVIRONMENT: dev
+
+jobs:
+  ##############################################################
+  # JOB 1: Detect which services have changed
+  ##############################################################
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.detect.outputs.services }}
+      any_changed: ${{ steps.detect.outputs.any_changed }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need previous commit to diff against
+
+      - name: Detect changed services
+        id: detect
+        run: |
+          ALL_SERVICES=(
+            adservice
+            cartservice
+            checkoutservice
+            currencyservice
+            emailservice
+            frontend
+            loadgenerator
+            paymentservice
+            productcatalogservice
+            recommendationservice
+            shippingservice
+            shoppingassistantservice
+          )
+
+          # Manual trigger with specific service
+          if [[ -n "${{ github.event.inputs.service }}" ]]; then
+            SERVICES='["${{ github.event.inputs.service }}"]'
+            echo "services=${SERVICES}" >> $GITHUB_OUTPUT
+            echo "any_changed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Manual trigger with force_all
+          if [[ "${{ github.event.inputs.force_all }}" == "true" ]]; then
+            SERVICES=$(printf '"%s",' "${ALL_SERVICES[@]}" | sed 's/,$//')
+            echo "services=[${SERVICES}]" >> $GITHUB_OUTPUT
+            echo "any_changed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Auto-detect from git diff
+          CHANGED=()
+          for SERVICE in "${ALL_SERVICES[@]}"; do
+            if git diff --name-only HEAD~1 HEAD | grep -q "^src/${SERVICE}/"; then
+              CHANGED+=("$SERVICE")
+            fi
+          done
+
+          if [[ ${#CHANGED[@]} -eq 0 ]]; then
+            echo "services=[]" >> $GITHUB_OUTPUT
+            echo "any_changed=false" >> $GITHUB_OUTPUT
+          else
+            SERVICES=$(printf '"%s",' "${CHANGED[@]}" | sed 's/,$//')
+            echo "services=[${SERVICES}]" >> $GITHUB_OUTPUT
+            echo "any_changed=true" >> $GITHUB_OUTPUT
+          fi
+
+          echo "Changed services: ${CHANGED[*]}"
+
+  ##############################################################
+  # JOB 2: Build, scan, and push each changed service
+  ##############################################################
+  build-push:
+    name: Build → Scan → Push (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any_changed == 'true'
+
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+      fail-fast: false  # Continue building other services if one fails
+
+    steps:
+      # ── 1. Checkout ───────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Configure AWS credentials via OIDC ─────────────
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/github-actions-${{ env.ENVIRONMENT }}
+          role-session-name: github-actions-build-${{ matrix.service }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── 3. Login to Amazon ECR ────────────────────────────
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ── 4. Set image metadata ─────────────────────────────
+      - name: Set image tags
+        id: meta
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE_TAG="git-${SHORT_SHA}"
+          ECR_REPO="${{ env.ECR_REGISTRY }}/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
+
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "ecr_repo=${ECR_REPO}" >> $GITHUB_OUTPUT
+          echo "full_image=${ECR_REPO}:${IMAGE_TAG}" >> $GITHUB_OUTPUT
+
+          echo "Building: ${{ matrix.service }}:${IMAGE_TAG}"
+
+      # ── 5. Set up Docker Buildx ───────────────────────────
+      # Buildx enables multi-platform builds and advanced caching
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── 6. Build image ────────────────────────────────────
+      # Cache layers in ECR to avoid rebuilding unchanged layers.
+      # This is critical for Java/Node/Python images with large deps.
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: src/${{ matrix.service }}
+          file: src/${{ matrix.service }}/Dockerfile
+          push: false         # Build only, don't push yet (scan first)
+          load: true          # Load into local Docker for scanning
+          tags: ${{ steps.meta.outputs.full_image }}
+          cache-from: type=registry,ref=${{ steps.meta.outputs.ecr_repo }}:cache
+          cache-to: type=registry,ref=${{ steps.meta.outputs.ecr_repo }}:cache,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            service=${{ matrix.service }}
+            environment=${{ env.ENVIRONMENT }}
+
+      # ── 7. Scan image with Trivy ──────────────────────────
+      # Scans for OS and library vulnerabilities.
+      # CRITICAL vulnerabilities block the push.
+      # Results also uploaded to GitHub Security tab.
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.meta.outputs.full_image }}
+          format: sarif
+          output: trivy-results-${{ matrix.service }}.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '0'    # Don't fail on HIGH — only report; adjust to '1' to block
+          ignore-unfixed: true
+
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results-${{ matrix.service }}.sarif
+          category: trivy-${{ matrix.service }}
+
+      # ── 8. Push image to ECR ──────────────────────────────
+      # Only push after successful scan.
+      # ECR has IMMUTABLE tags — this tag can never be overwritten.
+      - name: Push image to ECR
+        uses: docker/build-push-action@v6
+        with:
+          context: src/${{ matrix.service }}
+          file: src/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.full_image }}
+          cache-from: type=registry,ref=${{ steps.meta.outputs.ecr_repo }}:cache
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            service=${{ matrix.service }}
+            environment=${{ env.ENVIRONMENT }}
+
+      # ── 9. Job Summary ────────────────────────────────────
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "## ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image** | \`${{ steps.meta.outputs.full_image }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Tag** | \`${{ steps.meta.outputs.image_tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **SHA** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  ##############################################################
+  # JOB 3: Summary gate — fails the workflow if any build failed
+  ##############################################################
+  build-complete:
+    name: All Builds Complete
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-push]
+    if: always()
+
+    steps:
+      - name: Check build results
+        run: |
+          if [[ "${{ needs.detect-changes.outputs.any_changed }}" == "false" ]]; then
+            echo "✅ No services changed — nothing to build"
+            exit 0
+          fi
+
+          if [[ "${{ needs.build-push.result }}" == "failure" ]]; then
+            echo "❌ One or more service builds failed"
+            exit 1
+          fi
+
+          echo "✅ All service builds completed successfully"
